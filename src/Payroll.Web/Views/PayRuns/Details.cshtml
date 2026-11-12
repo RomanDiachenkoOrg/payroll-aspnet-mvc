@@ -1,0 +1,117 @@
+@model PayRunDetailsViewModel
+@{
+    var run = Model.PayRun;
+    ViewData["Title"] = run.Name;
+}
+
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a asp-action="Index">Pay runs</a></li>
+        <li class="breadcrumb-item active" aria-current="page">@run.Name</li>
+    </ol>
+</nav>
+
+<div class="d-flex flex-wrap justify-content-between align-items-start gap-2 mb-3">
+    <div>
+        <h1 class="h3 mb-1">@run.Name <status-badge status="@run.Status" /></h1>
+        <div class="text-muted">
+            Period @run.PeriodStart.ToString("yyyy-MM-dd") - @run.PeriodEnd.ToString("yyyy-MM-dd") &middot; pay date @run.PayDate.ToString("yyyy-MM-dd")
+        </div>
+    </div>
+    <div class="d-flex flex-wrap gap-2" id="payrun-actions">
+        @if (run.Status is PayRunStatus.Draft or PayRunStatus.Calculated)
+        {
+            <form asp-action="Calculate" asp-route-id="@run.Id" method="post">
+                <button type="submit" class="btn btn-outline-primary" id="calculate-payrun">@(run.Status == PayRunStatus.Draft ? "Calculate" : "Recalculate")</button>
+            </form>
+        }
+        @if (run.Status == PayRunStatus.Calculated)
+        {
+            <form asp-action="Approve" asp-route-id="@run.Id" method="post">
+                <button type="submit" class="btn btn-primary" id="approve-payrun"
+                        data-confirm="Approve @run.Name for @run.TotalNet.ToString("C2", System.Globalization.CultureInfo.GetCultureInfo("en-US")) net?">Approve</button>
+            </form>
+        }
+        @if (run.Status == PayRunStatus.Approved)
+        {
+            <form asp-action="MarkPaid" asp-route-id="@run.Id" method="post">
+                <button type="submit" class="btn btn-success" id="markpaid-payrun"
+                        data-confirm="Mark @run.Name as paid? The run will be locked and cannot be changed.">Mark as paid</button>
+            </form>
+        }
+        @if (run.Payslips.Count > 0)
+        {
+            <a asp-action="ExportCsv" asp-route-id="@run.Id" class="btn btn-outline-secondary" id="export-payrun">Export CSV</a>
+        }
+        @if (run.Status is PayRunStatus.Draft or PayRunStatus.Calculated)
+        {
+            <form asp-action="Delete" asp-route-id="@run.Id" method="post">
+                <button type="submit" class="btn btn-outline-danger" id="delete-payrun" data-confirm="Delete @run.Name and its payslips?">Delete</button>
+            </form>
+        }
+    </div>
+</div>
+
+@if (run.IsLocked)
+{
+    <div class="alert alert-secondary small" role="note">This pay run was paid on @run.PaidAt?.ToLocalTime().ToString("yyyy-MM-dd") and is locked.</div>
+}
+
+<div class="row g-3 mb-3">
+    <div class="col-md-3"><div class="card"><div class="card-body"><div class="small text-muted">Payslips</div><div class="fs-4">@run.Payslips.Count</div></div></div></div>
+    <div class="col-md-3"><div class="card"><div class="card-body"><div class="small text-muted">Gross</div><div class="fs-4"><money value="@run.TotalGross" /></div></div></div></div>
+    <div class="col-md-3"><div class="card"><div class="card-body"><div class="small text-muted">Deductions</div><div class="fs-4"><money value="@run.TotalDeductions" /></div></div></div></div>
+    <div class="col-md-3"><div class="card"><div class="card-body"><div class="small text-muted">Net</div><div class="fs-4"><money value="@run.TotalNet" /></div></div></div></div>
+</div>
+
+<div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <span>Lines</span>
+        <form method="get" asp-action="Details" asp-route-id="@run.Id" class="d-flex gap-2" role="search">
+            <label for="line-search" class="visually-hidden">Search lines</label>
+            <input type="search" id="line-search" name="search" value="@Model.Search" class="form-control form-control-sm" placeholder="Employee or department" />
+            <button type="submit" class="btn btn-sm btn-outline-secondary">Search</button>
+        </form>
+    </div>
+    <div class="table-responsive">
+        <table class="table table-sm table-hover align-middle mb-0" id="payrun-lines">
+            <thead class="table-light">
+            <tr>
+                <th>Employee</th>
+                <th>Department</th>
+                <th>Type</th>
+                <th class="text-end">Hours (OT)</th>
+                <th class="text-end">Gross</th>
+                <th class="text-end">Tax</th>
+                <th class="text-end">Social</th>
+                <th class="text-end">Pension</th>
+                <th class="text-end">Other</th>
+                <th class="text-end">Net</th>
+                <th></th>
+            </tr>
+            </thead>
+            <tbody>
+            @if (Model.Lines.Count == 0)
+            {
+                <tr><td colspan="11" class="text-center text-muted py-4">@(run.Status == PayRunStatus.Draft ? "Not calculated yet." : "No lines.")</td></tr>
+            }
+            @foreach (var p in Model.Lines)
+            {
+                <tr>
+                    <td>@p.Employee?.FullName <span class="text-muted small">@p.Employee?.EmployeeNumber</span></td>
+                    <td>@p.Employee?.Department?.Name</td>
+                    <td>@p.PayType</td>
+                    <td class="text-end">@(p.PayType == PayType.Hourly ? $"{p.RegularHours + p.OvertimeHours:0.##} ({p.OvertimeHours:0.##})" : "-")</td>
+                    <td class="text-end"><money value="@p.Gross" /></td>
+                    <td class="text-end"><money value="@p.IncomeTax" /></td>
+                    <td class="text-end"><money value="@p.SocialContribution" /></td>
+                    <td class="text-end"><money value="@p.Pension" /></td>
+                    <td class="text-end"><money value="@p.OtherDeductions" /></td>
+                    <td class="text-end fw-semibold"><money value="@p.Net" /></td>
+                    <td class="text-end"><a asp-controller="Payslips" asp-action="Details" asp-route-id="@p.Id">Payslip</a></td>
+                </tr>
+            }
+            </tbody>
+        </table>
+    </div>
+</div>

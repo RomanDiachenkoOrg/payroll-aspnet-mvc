@@ -1,0 +1,95 @@
+@model EmployeeFormViewModel
+
+<div asp-validation-summary="ModelOnly" class="alert alert-danger" role="alert"></div>
+<input type="hidden" asp-for="Id" />
+
+<fieldset class="mb-4">
+    <legend class="h6 text-muted">Personal details</legend>
+    <div class="row g-3">
+        <div class="col-md-6">
+            <label asp-for="FirstName" class="form-label"></label>
+            <input asp-for="FirstName" class="form-control" />
+            <span asp-validation-for="FirstName" class="text-danger small"></span>
+        </div>
+        <div class="col-md-6">
+            <label asp-for="LastName" class="form-label"></label>
+            <input asp-for="LastName" class="form-control" />
+            <span asp-validation-for="LastName" class="text-danger small"></span>
+        </div>
+        <div class="col-md-6">
+            <label asp-for="Email" class="form-label"></label>
+            <input asp-for="Email" class="form-control" type="email" />
+            <span asp-validation-for="Email" class="text-danger small"></span>
+        </div>
+        <div class="col-md-6">
+            <label asp-for="Phone" class="form-label"></label>
+            <input asp-for="Phone" class="form-control" />
+            <span asp-validation-for="Phone" class="text-danger small"></span>
+        </div>
+    </div>
+</fieldset>
+
+<fieldset class="mb-4">
+    <legend class="h6 text-muted">Employment</legend>
+    <div class="row g-3">
+        <div class="col-md-6">
+            <label asp-for="JobTitle" class="form-label"></label>
+            <input asp-for="JobTitle" class="form-control" />
+            <span asp-validation-for="JobTitle" class="text-danger small"></span>
+        </div>
+        <div class="col-md-3">
+            <label asp-for="DepartmentId" class="form-label"></label>
+            <select asp-for="DepartmentId" asp-items="Model.DepartmentOptions" class="form-select">
+                <option value="">-- Select --</option>
+            </select>
+            <span asp-validation-for="DepartmentId" class="text-danger small"></span>
+        </div>
+        <div class="col-md-3">
+            <label asp-for="HireDate" class="form-label"></label>
+            <input asp-for="HireDate" class="form-control" type="date" />
+            <span asp-validation-for="HireDate" class="text-danger small"></span>
+        </div>
+    </div>
+</fieldset>
+
+<fieldset class="mb-4">
+    <legend class="h6 text-muted">Pay</legend>
+    <div class="row g-3">
+        <div class="col-md-3">
+            <label asp-for="PayType" class="form-label"></label>
+            <select asp-for="PayType" asp-items="Html.GetEnumSelectList<PayType>()" class="form-select" data-pay-type></select>
+        </div>
+        <div class="col-md-3" data-pay-field="Salaried">
+            <label asp-for="AnnualSalary" class="form-label"></label>
+            <input asp-for="AnnualSalary" class="form-control" step="0.01" min="0" />
+            <span asp-validation-for="AnnualSalary" class="text-danger small"></span>
+        </div>
+        <div class="col-md-3" data-pay-field="Hourly">
+            <label asp-for="HourlyRate" class="form-label"></label>
+            <input asp-for="HourlyRate" class="form-control" step="0.01" min="0" />
+            <span asp-validation-for="HourlyRate" class="text-danger small"></span>
+        </div>
+        <div class="col-md-3 d-flex align-items-end">
+            <div class="form-check mb-2">
+                <input asp-for="PensionOptIn" class="form-check-input" />
+                <label asp-for="PensionOptIn" class="form-check-label"></label>
+            </div>
+        </div>
+    </div>
+</fieldset>
+
+<fieldset class="mb-4">
+    <legend class="h6 text-muted">Monthly deductions</legend>
+    <div class="row g-3">
+        @for (var i = 0; i < Model.Deductions.Count; i++)
+        {
+            <div class="col-md-4">
+                <input type="hidden" asp-for="Deductions[i].DeductionTypeId" />
+                <input type="hidden" asp-for="Deductions[i].Name" />
+                <label asp-for="Deductions[i].Amount" class="form-label">@Model.Deductions[i].Name (USD)</label>
+                <input asp-for="Deductions[i].Amount" class="form-control" step="0.01" min="0" />
+                <span asp-validation-for="Deductions[i].Amount" class="text-danger small"></span>
+            </div>
+        }
+    </div>
+</fieldset>

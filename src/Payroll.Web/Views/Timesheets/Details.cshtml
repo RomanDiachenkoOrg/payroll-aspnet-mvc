@@ -1,0 +1,90 @@
+@model TimesheetDetailsViewModel
+@{
+    var t = Model.Timesheet;
+    ViewData["Title"] = "Timesheet";
+}
+
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a asp-action="Index">Timesheets</a></li>
+        <li class="breadcrumb-item active" aria-current="page">Week of @t.WeekStart.ToString("MMM d, yyyy")</li>
+    </ol>
+</nav>
+
+<div class="d-flex flex-wrap justify-content-between align-items-start gap-2 mb-3">
+    <div>
+        <h1 class="h3 mb-1">@t.Employee?.FullName <status-badge status="@t.Status" /></h1>
+        <div class="text-muted">@t.Employee?.Department?.Name &middot; @t.WeekStart.ToString("MMM d") - @t.WeekEnd.ToString("MMM d, yyyy")</div>
+    </div>
+    <div class="d-flex gap-2">
+        @if (Model.CanEdit)
+        {
+            <a asp-action="Edit" asp-route-id="@t.Id" class="btn btn-outline-primary" id="edit-timesheet">Edit</a>
+            <form asp-action="Submit" asp-route-id="@t.Id" method="post">
+                <button type="submit" class="btn btn-primary" id="submit-timesheet">Submit for approval</button>
+            </form>
+        }
+        @if (Model.CanReview)
+        {
+            <form asp-action="Approve" asp-route-id="@t.Id" method="post">
+                <button type="submit" class="btn btn-success" id="approve-timesheet" data-confirm="Approve this timesheet (@t.TotalHours.ToString("0.##") hours)?">Approve</button>
+            </form>
+            <button type="button" class="btn btn-outline-danger" data-bs-toggle="collapse" data-bs-target="#reject-panel" id="reject-timesheet">Reject</button>
+        }
+    </div>
+</div>
+
+@if (t.Status == TimesheetStatus.Rejected)
+{
+    <div class="alert alert-warning"><strong>Rejected by @t.ReviewedBy:</strong> @t.RejectionReason</div>
+}
+
+@if (Model.CanReview)
+{
+    <div class="collapse mb-3" id="reject-panel">
+        <div class="card card-body border-danger">
+            <form asp-action="Reject" method="post" id="reject-form">
+                <input type="hidden" asp-for="Reject.Id" />
+                <label asp-for="Reject.Reason" class="form-label">Reason for rejection</label>
+                <textarea asp-for="Reject.Reason" class="form-control" rows="2"></textarea>
+                <span asp-validation-for="Reject.Reason" class="text-danger small"></span>
+                <button type="submit" class="btn btn-danger btn-sm mt-2" id="confirm-reject">Reject timesheet</button>
+            </form>
+        </div>
+    </div>
+}
+
+<div class="card mb-3">
+    <div class="table-responsive">
+        <table class="table text-center mb-0" id="timesheet-entries">
+            <thead class="table-light">
+            <tr>
+                @foreach (var e in t.Entries.OrderBy(e => e.WorkDate))
+                {
+                    <th>@e.WorkDate.ToString("ddd")<div class="small text-muted fw-normal">@e.WorkDate.ToString("MMM d")</div></th>
+                }
+                <th>Total</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr>
+                @foreach (var e in t.Entries.OrderBy(e => e.WorkDate))
+                {
+                    <td>@e.Hours.ToString("0.##")</td>
+                }
+                <td class="fw-semibold">@t.TotalHours.ToString("0.##")</td>
+            </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<dl class="row small">
+    <dt class="col-sm-2">Notes</dt><dd class="col-sm-10">@(t.Notes ?? "-")</dd>
+    <dt class="col-sm-2">Submitted</dt><dd class="col-sm-10">@(t.SubmittedAt?.ToLocalTime().ToString("yyyy-MM-dd HH:mm") ?? "-")</dd>
+    <dt class="col-sm-2">Reviewed</dt><dd class="col-sm-10">@(t.ReviewedAt is null ? "-" : $"{t.ReviewedAt.Value.ToLocalTime():yyyy-MM-dd HH:mm} by {t.ReviewedBy}")</dd>
+</dl>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

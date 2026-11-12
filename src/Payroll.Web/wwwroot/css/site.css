@@ -1,0 +1,78 @@
+html {
+    font-size: 15px;
+    position: relative;
+    min-height: 100%;
+}
+
+body {
+    background-color: #f6f7f9;
+}
+
+.card {
+    border-color: #e3e6ea;
+}
+
+.kpi .fs-3 {
+    line-height: 1.2;
+}
+
+.money {
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+}
+
+/* Simple horizontal bar chart on the dashboard */
+.bar-chart .bar-row {
+    display: grid;
+    grid-template-columns: 110px 1fr 110px;
+    align-items: center;
+    gap: .75rem;
+    margin-bottom: .6rem;
+}
+
+.bar-chart .bar-label {
+    font-size: .9rem;
+}
+
+.bar-chart .bar-track {
+    background: #eef1f4;
+    border-radius: 4px;
+    height: 18px;
+    overflow: hidden;
+}
+
+.bar-chart .bar-fill {
+    background: linear-gradient(90deg, #0d6efd, #4d94ff);
+    height: 100%;
+}
+
+.bar-chart .bar-value {
+    text-align: right;
+    font-size: .9rem;
+}
+
+.hours-input {
+    min-width: 70px;
+}
+
+.print-page {
+    background: #fff;
+}
+
+.payslip-table td, .payslip-table th {
+    padding: .35rem .5rem;
+}
+
+@media print {
+    body {
+        background: #fff;
+    }
+
+    .card {
+        border: none;
+    }
+
+    a[href]:after {
+        content: none;
+    }
+}

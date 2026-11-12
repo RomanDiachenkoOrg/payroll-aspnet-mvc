@@ -1,0 +1,92 @@
+@model TimesheetListViewModel
+@{
+    ViewData["Title"] = "Timesheets";
+    var q = Model.Query;
+    var r = Model.Result;
+    var returnUrl = Context.Request.Path + Context.Request.QueryString;
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h1 class="h3 mb-0">Timesheets</h1>
+    <a asp-action="Create" class="btn btn-primary" id="new-timesheet">+ New timesheet</a>
+</div>
+
+<form method="get" asp-action="Index" class="row g-2 align-items-end mb-3" id="timesheet-filter">
+    <div class="col-md-3">
+        <label for="status" class="form-label small">Status</label>
+        <select id="status" name="status" class="form-select">
+            <option value="">All statuses</option>
+            @foreach (var s in Enum.GetValues<TimesheetStatus>())
+            {
+                <option value="@s" selected="@(q.Status == s)">@s</option>
+            }
+        </select>
+    </div>
+    <div class="col-md-3">
+        <label for="weekFrom" class="form-label small">Weeks from</label>
+        <input type="date" id="weekFrom" name="weekFrom" value="@q.WeekFrom?.ToString("yyyy-MM-dd")" class="form-control" />
+    </div>
+    <div class="col-md-3 d-flex gap-2">
+        <button type="submit" class="btn btn-outline-primary">Filter</button>
+        <a asp-action="Index" class="btn btn-link">Reset</a>
+    </div>
+</form>
+
+<div class="card">
+    <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0" id="timesheets-table">
+            <thead class="table-light">
+            <tr>
+                <th>Week</th>
+                @if (Model.ShowEmployee)
+                {
+                    <th>Employee</th>
+                    <th>Department</th>
+                }
+                <th class="text-end">Hours</th>
+                <th>Status</th>
+                <th>Submitted</th>
+                <th class="text-end">Actions</th>
+            </tr>
+            </thead>
+            <tbody>
+            @if (r.Items.Count == 0)
+            {
+                <tr><td colspan="7" class="text-center text-muted py-4">No timesheets found.</td></tr>
+            }
+            @foreach (var t in r.Items)
+            {
+                <tr data-timesheet-id="@t.Id">
+                    <td><a asp-action="Details" asp-route-id="@t.Id">@t.WeekStart.ToString("MMM d") - @t.WeekEnd.ToString("MMM d, yyyy")</a></td>
+                    @if (Model.ShowEmployee)
+                    {
+                        <td>@t.Employee?.FullName</td>
+                        <td>@t.Employee?.Department?.Name</td>
+                    }
+                    <td class="text-end">@t.TotalHours.ToString("0.##")</td>
+                    <td><status-badge status="@t.Status" /></td>
+                    <td class="small text-muted">@t.SubmittedAt?.ToLocalTime().ToString("yyyy-MM-dd HH:mm")</td>
+                    <td class="text-end">
+                        @if (Model.CanReview && t.Status == TimesheetStatus.Submitted)
+                        {
+                            <form asp-action="Approve" asp-route-id="@t.Id" method="post" class="d-inline">
+                                <input type="hidden" name="returnUrl" value="@returnUrl" />
+                                <button type="submit" class="btn btn-sm btn-success">Approve</button>
+                            </form>
+                            <a asp-action="Details" asp-route-id="@t.Id" class="btn btn-sm btn-outline-danger">Reject...</a>
+                        }
+                        else
+                        {
+                            <a asp-action="Details" asp-route-id="@t.Id" class="btn btn-sm btn-outline-secondary">Open</a>
+                        }
+                    </td>
+                </tr>
+            }
+            </tbody>
+        </table>
+    </div>
+    <div class="card-footer d-flex justify-content-between align-items-center">
+        <span class="small text-muted">@r.TotalCount timesheet(s)</span>
+        <pager page="@r.Page" total-pages="@r.TotalPages" />
+    </div>
+</div>

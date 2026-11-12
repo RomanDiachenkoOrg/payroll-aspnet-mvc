@@ -1,0 +1,93 @@
+@model EmployeeListViewModel
+@{
+    ViewData["Title"] = "Employees";
+    var q = Model.Query;
+    var r = Model.Result;
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h1 class="h3 mb-0">Employees</h1>
+    @if (Model.CanManage)
+    {
+        <a asp-action="Create" class="btn btn-primary" id="add-employee">+ New employee</a>
+    }
+</div>
+
+<form method="get" asp-action="Index" class="row g-2 align-items-end mb-3" id="employee-filter" role="search">
+    <div class="col-md-4">
+        <label for="search" class="form-label small">Search</label>
+        <input type="search" id="search" name="search" value="@q.Search" class="form-control" placeholder="Name, email, number or title" />
+    </div>
+    <div class="col-md-3">
+        <label for="departmentId" class="form-label small">Department</label>
+        <select id="departmentId" name="departmentId" class="form-select" asp-items="Model.Departments">
+            <option value="">All departments</option>
+        </select>
+    </div>
+    <div class="col-md-2">
+        <label for="status" class="form-label small">Status</label>
+        <select id="status" name="status" class="form-select">
+            <option value="Active" selected="@(q.Status == EmployeeStatusFilter.Active)">Active</option>
+            <option value="Inactive" selected="@(q.Status == EmployeeStatusFilter.Inactive)">Inactive</option>
+            <option value="All" selected="@(q.Status == EmployeeStatusFilter.All)">All</option>
+        </select>
+    </div>
+    <input type="hidden" name="sort" value="@q.Sort" />
+    <div class="col-md-3 d-flex gap-2">
+        <button type="submit" class="btn btn-outline-primary">Apply</button>
+        <a asp-action="Index" class="btn btn-link">Reset</a>
+    </div>
+</form>
+
+<div class="card">
+    <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0" id="employees-table">
+            <thead class="table-light">
+            <tr>
+                <th scope="col"><sort-link field="number" current="@q.Sort">No.</sort-link></th>
+                <th scope="col"><sort-link field="name" current="@q.Sort">Name</sort-link></th>
+                <th scope="col"><sort-link field="email" current="@q.Sort">Email</sort-link></th>
+                <th scope="col"><sort-link field="department" current="@q.Sort">Department</sort-link></th>
+                <th scope="col">Title</th>
+                <th scope="col">Pay</th>
+                <th scope="col"><sort-link field="hiredate" current="@q.Sort">Hired</sort-link></th>
+                <th scope="col">Status</th>
+            </tr>
+            </thead>
+            <tbody>
+            @if (r.Items.Count == 0)
+            {
+                <tr><td colspan="8" class="text-center text-muted py-4">No employees match the current filter.</td></tr>
+            }
+            @foreach (var e in r.Items)
+            {
+                <tr data-employee-id="@e.Id">
+                    <td>@e.EmployeeNumber</td>
+                    <td><a asp-action="Details" asp-route-id="@e.Id">@e.LastName, @e.FirstName</a></td>
+                    <td>@e.Email</td>
+                    <td>@e.Department?.Name</td>
+                    <td>@e.JobTitle</td>
+                    <td>
+                        @if (e.PayType == PayType.Salaried)
+                        {
+                            <money value="@e.AnnualSalary" /><span class="text-muted small"> /yr</span>
+                        }
+                        else
+                        {
+                            <money value="@e.HourlyRate" /><span class="text-muted small"> /h</span>
+                        }
+                    </td>
+                    <td>@e.HireDate.ToString("yyyy-MM-dd")</td>
+                    <td><status-badge status="@e.IsActive" /></td>
+                </tr>
+            }
+            </tbody>
+        </table>
+    </div>
+    <div class="card-footer d-flex justify-content-between align-items-center">
+        <span class="small text-muted" id="employees-count">
+            Showing @r.FirstItemIndex-@r.LastItemIndex of @r.TotalCount
+        </span>
+        <pager page="@r.Page" total-pages="@r.TotalPages" />
+    </div>
+</div>

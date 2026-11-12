@@ -1,0 +1,101 @@
+@model TimesheetFormViewModel
+@{
+    var isNew = Model.Id is null;
+    ViewData["Title"] = isNew ? "New timesheet" : "Edit timesheet";
+}
+
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a asp-action="Index">Timesheets</a></li>
+        <li class="breadcrumb-item active" aria-current="page">@(isNew ? "New" : "Edit")</li>
+    </ol>
+</nav>
+
+<h1 class="h3 mb-3">@ViewData["Title"]</h1>
+
+@if (Model.Status == TimesheetStatus.Rejected && !string.IsNullOrEmpty(Model.RejectionReason))
+{
+    <div class="alert alert-warning" role="alert">
+        <strong>Rejected:</strong> @Model.RejectionReason
+    </div>
+}
+
+<div class="card">
+    <div class="card-body">
+        <form asp-action="Save" method="post" id="timesheet-form">
+            <div asp-validation-summary="ModelOnly" class="alert alert-danger" role="alert"></div>
+            <input type="hidden" asp-for="Id" />
+            <input type="hidden" asp-for="Status" />
+
+            <div class="row g-3 mb-3">
+                <div class="col-md-6">
+                    <label asp-for="EmployeeId" class="form-label"></label>
+                    @if (Model.CanChooseEmployee)
+                    {
+                        <select asp-for="EmployeeId" asp-items="Model.EmployeeOptions" class="form-select">
+                            <option value="">-- Select employee --</option>
+                        </select>
+                    }
+                    else
+                    {
+                        <input type="hidden" asp-for="EmployeeId" />
+                        <input type="text" class="form-control" readonly value="@(Model.EmployeeOptions.FirstOrDefault()?.Text)" aria-label="Employee" />
+                    }
+                    <span asp-validation-for="EmployeeId" class="text-danger small"></span>
+                </div>
+                <div class="col-md-3">
+                    <label asp-for="WeekStart" class="form-label"></label>
+                    <input asp-for="WeekStart" class="form-control" type="date" />
+                    <span asp-validation-for="WeekStart" class="text-danger small"></span>
+                    <div class="form-text">Any date is moved to the Monday of its week.</div>
+                </div>
+            </div>
+
+            <div class="table-responsive">
+                <table class="table table-bordered text-center align-middle" id="timesheet-days">
+                    <thead class="table-light">
+                    <tr>
+                        @for (var i = 0; i < Model.Days.Count; i++)
+                        {
+                            <th scope="col">
+                                <label for="Days_@(i)__Hours" class="mb-0">@Model.Days[i].Date.ToString("ddd")</label>
+                                <div class="small text-muted fw-normal">@Model.Days[i].Date.ToString("MMM d")</div>
+                            </th>
+                        }
+                        <th scope="col">Total</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr>
+                        @for (var i = 0; i < Model.Days.Count; i++)
+                        {
+                            <td>
+                                <input type="hidden" asp-for="Days[i].Date" />
+                                <input asp-for="Days[i].Hours" class="form-control form-control-sm text-end hours-input" min="0" max="24" step="0.25" />
+                                <span asp-validation-for="Days[i].Hours" class="text-danger small d-block"></span>
+                            </td>
+                        }
+                        <td class="fw-semibold" id="timesheet-total">@Model.TotalHours.ToString("0.##")</td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="mb-3">
+                <label asp-for="Notes" class="form-label"></label>
+                <textarea asp-for="Notes" class="form-control" rows="2"></textarea>
+                <span asp-validation-for="Notes" class="text-danger small"></span>
+            </div>
+
+            <div class="d-flex gap-2">
+                <button type="submit" name="submitAction" value="save" class="btn btn-outline-primary" id="save-draft">Save draft</button>
+                <button type="submit" name="submitAction" value="submit" class="btn btn-primary" id="save-submit">Save &amp; submit</button>
+                <a asp-action="Index" class="btn btn-link">Cancel</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

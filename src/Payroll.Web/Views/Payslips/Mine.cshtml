@@ -1,0 +1,42 @@
+@model IReadOnlyList<Payslip>
+@{
+    ViewData["Title"] = "My payslips";
+}
+
+<h1 class="h3 mb-3">My payslips</h1>
+
+<div class="card">
+    <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0" id="my-payslips">
+            <thead class="table-light">
+            <tr>
+                <th>Period</th>
+                <th>Pay date</th>
+                <th>Status</th>
+                <th class="text-end">Gross</th>
+                <th class="text-end">Deductions</th>
+                <th class="text-end">Net</th>
+                <th></th>
+            </tr>
+            </thead>
+            <tbody>
+            @if (Model.Count == 0)
+            {
+                <tr><td colspan="7" class="text-center text-muted py-4">You have no payslips yet.</td></tr>
+            }
+            @foreach (var p in Model)
+            {
+                <tr>
+                    <td>@p.PayRun?.PeriodStart.ToString("MMMM yyyy")</td>
+                    <td>@p.PayRun?.PayDate.ToString("yyyy-MM-dd")</td>
+                    <td><status-badge status="@p.PayRun?.Status" /></td>
+                    <td class="text-end"><money value="@p.Gross" /></td>
+                    <td class="text-end"><money value="@p.TotalDeductions" /></td>
+                    <td class="text-end fw-semibold"><money value="@p.Net" /></td>
+                    <td class="text-end"><a asp-action="Details" asp-route-id="@p.Id">View</a></td>
+                </tr>
+            }
+            </tbody>
+        </table>
+    </div>
+</div>

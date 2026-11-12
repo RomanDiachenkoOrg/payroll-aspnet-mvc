@@ -1,0 +1,123 @@
+@model DashboardViewModel
+@{
+    ViewData["Title"] = "Dashboard";
+    var s = Model.Summary;
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h1 class="h3 mb-0">Dashboard</h1>
+    <span class="text-muted small">@DateTime.Today.ToString("dddd, MMMM d, yyyy")</span>
+</div>
+
+<div class="row g-3 mb-4">
+    <div class="col-sm-6 col-lg-3">
+        <div class="card kpi h-100" id="kpi-headcount">
+            <div class="card-body">
+                <div class="text-muted small">Headcount</div>
+                <div class="fs-3 fw-semibold">@s.Headcount</div>
+                <div class="small text-muted">active employees</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-sm-6 col-lg-3">
+        <div class="card kpi h-100" id="kpi-last-payroll">
+            <div class="card-body">
+                <div class="text-muted small">Last payroll (gross)</div>
+                <div class="fs-3 fw-semibold"><money value="@s.LastPaidRun?.TotalGross" /></div>
+                <div class="small text-muted">@(s.LastPaidRun?.Name ?? "No paid runs yet")</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-sm-6 col-lg-3">
+        <div class="card kpi h-100" id="kpi-pending-timesheets">
+            <div class="card-body">
+                <div class="text-muted small">Pending timesheets</div>
+                <div class="fs-3 fw-semibold">@s.PendingTimesheets</div>
+                <a class="small" asp-controller="Timesheets" asp-action="Index" asp-route-status="Submitted">Review</a>
+            </div>
+        </div>
+    </div>
+    <div class="col-sm-6 col-lg-3">
+        <div class="card kpi h-100" id="kpi-next-pay-date">
+            <div class="card-body">
+                <div class="text-muted small">Next pay date</div>
+                <div class="fs-3 fw-semibold">@s.NextPayDate.ToString("MMM d")</div>
+                <div class="small text-muted">
+                    @if (s.NextRun is not null)
+                    {
+                        <span>@s.NextRun.Name &middot; <status-badge status="@s.NextRun.Status" /></span>
+                    }
+                    else
+                    {
+                        <span>No open pay run</span>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-3">
+    <div class="col-lg-7">
+        <div class="card h-100">
+            <div class="card-header">Payroll cost by department @(s.LastPaidRun is null ? "" : $"- {s.LastPaidRun.Name}")</div>
+            <div class="card-body">
+                @if (s.LastRunByDepartment.Count == 0)
+                {
+                    <p class="text-muted mb-0">No paid payroll yet.</p>
+                }
+                else
+                {
+                    <div class="bar-chart" role="img" aria-label="Gross pay per department for the last paid payroll">
+                        @foreach (var row in s.LastRunByDepartment)
+                        {
+                            var pct = Model.MaxDepartmentGross == 0 ? 0 : (int)Math.Round(row.Gross / Model.MaxDepartmentGross * 100);
+                            <div class="bar-row">
+                                <span class="bar-label">@row.Department</span>
+                                <div class="bar-track"><div class="bar-fill" style="width:@pct%"></div></div>
+                                <span class="bar-value"><money value="@row.Gross" /></span>
+                            </div>
+                        }
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-5">
+        @if (Model.Role == "Admin")
+        {
+            <div class="card h-100">
+                <div class="card-header d-flex justify-content-between">
+                    <span>Recent activity</span>
+                    <a asp-controller="Admin" asp-action="AuditLog" class="small">Audit log</a>
+                </div>
+                <ul class="list-group list-group-flush small">
+                    @foreach (var entry in s.RecentActivity)
+                    {
+                        <li class="list-group-item">
+                            <span class="text-muted">@entry.Timestamp.ToLocalTime().ToString("MMM d HH:mm")</span>
+                            <strong>@entry.Action</strong> @entry.EntityType @entry.EntityId
+                            <div class="text-muted text-truncate">@entry.UserEmail @(string.IsNullOrEmpty(entry.Details) ? "" : "- " + entry.Details)</div>
+                        </li>
+                    }
+                </ul>
+            </div>
+        }
+        else
+        {
+            <div class="card h-100">
+                <div class="card-header">Quick links</div>
+                <div class="list-group list-group-flush">
+                    <a class="list-group-item list-group-item-action" asp-controller="Timesheets" asp-action="Create">Enter this week's timesheet</a>
+                    <a class="list-group-item list-group-item-action" asp-controller="Timesheets" asp-action="Index">My timesheets</a>
+                    <a class="list-group-item list-group-item-action" asp-controller="Payslips" asp-action="Mine">My payslips</a>
+                    <a class="list-group-item list-group-item-action" asp-controller="Employees" asp-action="Me">My profile</a>
+                    @if (Model.Role == "Manager")
+                    {
+                        <a class="list-group-item list-group-item-action" asp-controller="Reports" asp-action="Index">Payroll cost report</a>
+                    }
+                </div>
+            </div>
+        }
+    </div>
+</div>

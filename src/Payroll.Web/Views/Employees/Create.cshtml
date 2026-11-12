@@ -1,0 +1,29 @@
+@model EmployeeFormViewModel
+@{
+    ViewData["Title"] = "New employee";
+}
+
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a asp-action="Index">Employees</a></li>
+        <li class="breadcrumb-item active" aria-current="page">New</li>
+    </ol>
+</nav>
+
+<h1 class="h3 mb-3">New employee</h1>
+
+<div class="card">
+    <div class="card-body">
+        <form asp-action="Create" method="post" id="employee-form">
+            <partial name="_EmployeeForm" model="Model" />
+            <div class="d-flex gap-2">
+                <button type="submit" class="btn btn-primary" id="save-employee">Create employee</button>
+                <a asp-action="Index" class="btn btn-outline-secondary">Cancel</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

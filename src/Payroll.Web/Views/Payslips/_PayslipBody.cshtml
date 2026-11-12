@@ -1,0 +1,42 @@
+@model Payslip
+@{
+    var e = Model.Employee!;
+    var run = Model.PayRun!;
+}
+
+<div class="row mb-3">
+    <div class="col-sm-6">
+        <div class="fw-semibold">@e.FullName</div>
+        <div class="small text-muted">@e.EmployeeNumber &middot; @e.JobTitle</div>
+        <div class="small text-muted">@e.Department?.Name</div>
+    </div>
+    <div class="col-sm-6 text-sm-end small">
+        <div>Period: <strong>@run.PeriodStart.ToString("yyyy-MM-dd")</strong> to <strong>@run.PeriodEnd.ToString("yyyy-MM-dd")</strong></div>
+        <div>Pay date: <strong>@run.PayDate.ToString("yyyy-MM-dd")</strong></div>
+        <div>Pay type: @Model.PayType @(Model.PayType == PayType.Hourly ? $"@ {Model.HourlyRate:0.00}/h" : $"({Model.AnnualSalary:N2}/yr)")</div>
+    </div>
+</div>
+
+<table class="table table-sm payslip-table" id="payslip-breakdown">
+    <thead class="table-light">
+    <tr><th>Description</th><th class="text-end">Hours</th><th class="text-end">Amount</th></tr>
+    </thead>
+    <tbody>
+    @if (Model.PayType == PayType.Hourly)
+    {
+        <tr><td>Regular pay</td><td class="text-end">@Model.RegularHours.ToString("0.##")</td><td class="text-end"><money value="@(Model.RegularHours * (Model.HourlyRate ?? 0))" /></td></tr>
+        <tr><td>Overtime pay (x1.5)</td><td class="text-end">@Model.OvertimeHours.ToString("0.##")</td><td class="text-end"><money value="@(Model.Gross - Model.RegularHours * (Model.HourlyRate ?? 0))" /></td></tr>
+    }
+    else
+    {
+        <tr><td>Monthly salary</td><td class="text-end">-</td><td class="text-end"><money value="@Model.Gross" /></td></tr>
+    }
+    <tr class="fw-semibold table-group-divider"><td>Gross pay</td><td></td><td class="text-end" data-field="gross"><money value="@Model.Gross" /></td></tr>
+    <tr><td>Income tax</td><td></td><td class="text-end" data-field="tax"><money value="@Model.IncomeTax" negative="true" /></td></tr>
+    <tr><td>Social contribution</td><td></td><td class="text-end" data-field="social"><money value="@Model.SocialContribution" negative="true" /></td></tr>
+    <tr><td>Pension</td><td></td><td class="text-end" data-field="pension"><money value="@Model.Pension" negative="true" /></td></tr>
+    <tr><td>Other deductions</td><td></td><td class="text-end" data-field="other"><money value="@Model.OtherDeductions" negative="true" /></td></tr>
+    <tr class="fw-semibold"><td>Total deductions</td><td></td><td class="text-end"><money value="@Model.TotalDeductions" negative="true" /></td></tr>
+    <tr class="fw-bold fs-5 table-group-divider"><td>Net pay</td><td></td><td class="text-end" data-field="net"><money value="@Model.Net" /></td></tr>
+    </tbody>
+</table>

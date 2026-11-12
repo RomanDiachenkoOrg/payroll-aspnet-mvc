@@ -1,0 +1,34 @@
+@model PayslipViewModel
+@{
+    var p = Model.Payslip;
+    ViewData["Title"] = $"Payslip {p.Employee?.FullName} {p.PayRun?.PeriodStart:MMMM yyyy}";
+}
+
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        @if (Model.CanSeeRun)
+        {
+            <li class="breadcrumb-item"><a asp-controller="PayRuns" asp-action="Index">Pay runs</a></li>
+            <li class="breadcrumb-item"><a asp-controller="PayRuns" asp-action="Details" asp-route-id="@p.PayRunId">@p.PayRun?.Name</a></li>
+        }
+        else
+        {
+            <li class="breadcrumb-item"><a asp-action="Mine">My payslips</a></li>
+        }
+        <li class="breadcrumb-item active" aria-current="page">Payslip</li>
+    </ol>
+</nav>
+
+<div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+    <h1 class="h3 mb-0">Payslip <small class="text-muted">@p.PayRun?.Name</small> <status-badge status="@p.PayRun?.Status" /></h1>
+    <div class="d-flex gap-2">
+        <a asp-action="Print" asp-route-id="@p.Id" class="btn btn-outline-secondary" target="_blank" id="print-payslip">Print view</a>
+        <a asp-action="ExportCsv" asp-route-id="@p.Id" class="btn btn-outline-secondary" id="export-payslip">Download CSV</a>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-body">
+        <partial name="_PayslipBody" model="p" />
+    </div>
+</div>

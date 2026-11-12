@@ -1,0 +1,45 @@
+@model IReadOnlyList<AppUser>
+@{
+    ViewData["Title"] = "Users";
+}
+
+<h1 class="h3 mb-3">Users</h1>
+
+<div class="card">
+    <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0" id="users-table">
+            <thead class="table-light">
+            <tr>
+                <th>Email</th>
+                <th>Name</th>
+                <th>Role</th>
+                <th>Department</th>
+                <th>Status</th>
+                <th>Last sign-in</th>
+            </tr>
+            </thead>
+            <tbody>
+            @foreach (var u in Model)
+            {
+                <tr>
+                    <td>@u.Email</td>
+                    <td>
+                        @if (u.EmployeeId.HasValue)
+                        {
+                            <a asp-controller="Employees" asp-action="Details" asp-route-id="@u.EmployeeId">@u.DisplayName</a>
+                        }
+                        else
+                        {
+                            @u.DisplayName
+                        }
+                    </td>
+                    <td><span class="badge text-bg-light border">@u.Role</span></td>
+                    <td>@(u.Department?.Name ?? "-")</td>
+                    <td><status-badge status="@u.IsActive" /></td>
+                    <td class="small text-muted">@(u.LastLoginAt?.ToLocalTime().ToString("yyyy-MM-dd HH:mm") ?? "never")</td>
+                </tr>
+            }
+            </tbody>
+        </table>
+    </div>
+</div>

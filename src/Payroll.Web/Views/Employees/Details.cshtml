@@ -1,0 +1,157 @@
+@model EmployeeDetailsViewModel
+@{
+    var e = Model.Employee;
+    ViewData["Title"] = e.FullName;
+}
+
+@if (!Model.IsOwnProfile || Model.CanManage)
+{
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a asp-action="Index">Employees</a></li>
+            <li class="breadcrumb-item active" aria-current="page">@e.FullName</li>
+        </ol>
+    </nav>
+}
+
+<div class="d-flex flex-wrap justify-content-between align-items-start gap-2 mb-3">
+    <div>
+        <h1 class="h3 mb-1">@e.FullName <status-badge status="@e.IsActive" /></h1>
+        <div class="text-muted">@e.EmployeeNumber &middot; @e.JobTitle &middot; @e.Department?.Name</div>
+    </div>
+    @if (Model.CanManage)
+    {
+        <div class="d-flex gap-2">
+            <a asp-action="Edit" asp-route-id="@e.Id" class="btn btn-outline-primary" id="edit-employee">Edit</a>
+            @if (e.IsActive)
+            {
+                <form asp-action="Deactivate" asp-route-id="@e.Id" method="post">
+                    <button type="submit" class="btn btn-outline-danger" id="deactivate-employee"
+                            data-confirm="Deactivate @e.FullName? They will be excluded from future pay runs.">Deactivate</button>
+                </form>
+            }
+            else
+            {
+                <form asp-action="Activate" asp-route-id="@e.Id" method="post">
+                    <button type="submit" class="btn btn-outline-success" id="activate-employee"
+                            data-confirm="Re-activate @e.FullName?">Re-activate</button>
+                </form>
+            }
+        </div>
+    }
+</div>
+
+<div class="row g-3">
+    <div class="col-lg-5">
+        <div class="card mb-3">
+            <div class="card-header">Profile</div>
+            <div class="card-body">
+                <dl class="row mb-0">
+                    <dt class="col-5">Email</dt><dd class="col-7">@e.Email</dd>
+                    <dt class="col-5">Phone</dt><dd class="col-7">@(e.Phone ?? "-")</dd>
+                    <dt class="col-5">Hire date</dt><dd class="col-7">@e.HireDate.ToString("yyyy-MM-dd")</dd>
+                    @if (e.TerminationDate.HasValue)
+                    {
+                        <dt class="col-5">Termination</dt><dd class="col-7">@e.TerminationDate.Value.ToString("yyyy-MM-dd")</dd>
+                    }
+                    <dt class="col-5">Pay type</dt><dd class="col-7">@e.PayType</dd>
+                    <dt class="col-5">@(e.PayType == PayType.Salaried ? "Annual salary" : "Hourly rate")</dt>
+                    <dd class="col-7"><money value="@(e.PayType == PayType.Salaried ? e.AnnualSalary : e.HourlyRate)" /></dd>
+                    <dt class="col-5">Pension</dt><dd class="col-7">@(e.PensionOptIn ? "Enrolled" : "Not enrolled")</dd>
+                    <dt class="col-5">Deductions</dt>
+                    <dd class="col-7">
+                        @if (e.Deductions.Count == 0)
+                        {
+                            <span>-</span>
+                        }
+                        @foreach (var d in e.Deductions)
+                        {
+                            <div>@d.DeductionType?.Name: <money value="@d.Amount" /></div>
+                        }
+                    </dd>
+                </dl>
+            </div>
+        </div>
+
+        @if (Model.CanManage && e.IsActive)
+        {
+            <div class="card mb-3">
+                <div class="card-header">Add raise / pay change</div>
+                <div class="card-body">
+                    <form asp-action="AddRaise" method="post" id="raise-form">
+                        <input type="hidden" asp-for="Raise.EmployeeId" />
+                        <div class="row g-2">
+                            <div class="col-6">
+                                <label asp-for="Raise.NewAmount" class="form-label small">@(e.PayType == PayType.Salaried ? "New annual salary" : "New hourly rate")</label>
+                                <input asp-for="Raise.NewAmount" class="form-control" step="0.01" />
+                                <span asp-validation-for="Raise.NewAmount" class="text-danger small"></span>
+                            </div>
+                            <div class="col-6">
+                                <label asp-for="Raise.EffectiveDate" class="form-label small"></label>
+                                <input asp-for="Raise.EffectiveDate" class="form-control" type="date" />
+                                <span asp-validation-for="Raise.EffectiveDate" class="text-danger small"></span>
+                            </div>
+                            <div class="col-12">
+                                <label asp-for="Raise.Reason" class="form-label small"></label>
+                                <input asp-for="Raise.Reason" class="form-control" placeholder="e.g. Annual review, promotion" />
+                            </div>
+                        </div>
+                        <button type="submit" class="btn btn-primary btn-sm mt-3" id="save-raise">Record change</button>
+                    </form>
+                </div>
+            </div>
+        }
+    </div>
+
+    <div class="col-lg-7">
+        <div class="card mb-3">
+            <div class="card-header">Salary history</div>
+            <div class="table-responsive">
+                <table class="table table-sm mb-0" id="salary-history">
+                    <thead class="table-light">
+                    <tr><th>Effective</th><th>Type</th><th class="text-end">Amount</th><th>Reason</th><th>By</th></tr>
+                    </thead>
+                    <tbody>
+                    @foreach (var h in e.SalaryHistory.OrderByDescending(h => h.EffectiveDate).ThenByDescending(h => h.Id))
+                    {
+                        <tr>
+                            <td>@h.EffectiveDate.ToString("yyyy-MM-dd")</td>
+                            <td>@h.PayType</td>
+                            <td class="text-end"><money value="@(h.PayType == PayType.Salaried ? h.AnnualSalary : h.HourlyRate)" /></td>
+                            <td>@h.Reason</td>
+                            <td class="small text-muted">@h.ChangedBy</td>
+                        </tr>
+                    }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header">Payslips</div>
+            <div class="table-responsive">
+                <table class="table table-sm table-hover mb-0" id="employee-payslips">
+                    <thead class="table-light">
+                    <tr><th>Period</th><th>Status</th><th class="text-end">Gross</th><th class="text-end">Net</th><th></th></tr>
+                    </thead>
+                    <tbody>
+                    @if (Model.Payslips.Count == 0)
+                    {
+                        <tr><td colspan="5" class="text-muted text-center">No payslips.</td></tr>
+                    }
+                    @foreach (var p in Model.Payslips)
+                    {
+                        <tr>
+                            <td>@p.PayRun?.Name</td>
+                            <td><status-badge status="@p.PayRun?.Status" /></td>
+                            <td class="text-end"><money value="@p.Gross" /></td>
+                            <td class="text-end"><money value="@p.Net" /></td>
+                            <td class="text-end"><a asp-controller="Payslips" asp-action="Details" asp-route-id="@p.Id">View</a></td>
+                        </tr>
+                    }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
